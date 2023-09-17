@@ -1,0 +1,19 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="container mt-5">
+    <div class="jumbotron">
+        <h1 class="display-4">Ultrasound Imaging Center</h1>
+        <h2>Hello @Model.Message!</h2>
+        <p class="lead">Welcome to our state-of-the-art ultrasound imaging center. Experience clarity like never before.</p>
+        <hr class="my-4">
+        <p>We provide expert services for both doctors and patients. Join us today to discover more.</p>
+        <p class="lead">
+            <a class="btn btn-primary btn-lg" asp-area="Identity" asp-page="/Account/Register" role="button">Register</a>
+            <a class="btn btn-secondary btn-lg ml-2" asp-area="Identity" asp-page="/Account/Login" role="button">Login</a>
+        </p>
+    </div>
+</div>
