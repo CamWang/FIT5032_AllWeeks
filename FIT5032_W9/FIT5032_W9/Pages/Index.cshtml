@@ -1,0 +1,18 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <img srcset="image-original-600w.jpg 600w,
+                 image-original-900w.jpg 900w,
+                image-original-1200w.jpg 1200w"
+         sizes="(max-width: 600px) 560px,
+                (max-width: 900px) 860px,
+                1200px"
+         src="image-original-1200w.jpg"
+         alt="Bridge">
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
