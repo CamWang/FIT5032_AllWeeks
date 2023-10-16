@@ -39,7 +39,7 @@ namespace EasyImagery.Data
             builder.Entity<Patient>()
                 .HasOne(p => p.Timeslot)
                 .WithOne(t => t.Patient)
-                .HasForeignKey<Patient>(p => p.TimeslotId);
+                .HasForeignKey<Timeslot>(t => t.PatientId);
         }
     }
 }

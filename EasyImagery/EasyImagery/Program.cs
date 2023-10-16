@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using EasyImagery.Services;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using EasyImagery.Models;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+builder.Services.AddTransient<EmailSender>();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
@@ -22,18 +25,18 @@ builder.Services.AddIdentityCore<Patient>().AddEntityFrameworkStores<Application
 builder.Services.AddControllersWithViews();
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.Configure<AuthMessageSenderOptions>(builder.Configuration);
-//builder.Services.AddAuthentication(options =>
-//{
-//    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-//    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-//    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-//})
-//    .AddCookie()
-//    .AddGoogle(options =>
-//    {
-//        options.ClientId = "54193987010-ib3r64e0qkvk1fudltrk76imrf58b6mp.apps.googleusercontent.com";
-//        options.ClientSecret = "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";
-//    });
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+    .AddCookie()
+    .AddGoogle(options =>
+    {
+        options.ClientId = "54193987010-ib3r64e0qkvk1fudltrk76imrf58b6mp.apps.googleusercontent.com";
+        options.ClientSecret = "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";
+    });
 
 
 var app = builder.Build();

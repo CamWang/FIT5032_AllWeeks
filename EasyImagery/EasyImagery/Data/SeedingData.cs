@@ -38,6 +38,24 @@ namespace EasyImagery.Data
 
             await context.SaveChangesAsync();
 
+            var tempu = await userManager.FindByEmailAsync("camwangs@gmail.com");
+            if (tempu == null)
+            {
+                var tempp = new Patient
+                {
+                    UserName = "camwangs@gmail.com",
+                    Email = "camwangs@gmail.com",
+                    Name = $"Cam",
+                    Address = $"Address 1",
+                    City = $"City 1",
+                    State = $"State 1",
+                    Zip = $"3003",
+                    Birthday = DateTime.Now.AddYears(-25).AddDays(5)
+                };
+                await userManager.CreateAsync(tempp, $"Patient0@123");
+                await userManager.AddToRoleAsync(tempp, "Patient");
+            }
+
             // Create four patients
             for (int i = 1; i <= 4; i++)
             {

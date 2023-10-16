@@ -47,4 +47,39 @@ public class EmailSender : IEmailSender
                                ? $"Email to {toEmail} queued successfully!"
                                : $"Failure Email to {toEmail}");
     }
+
+    public async Task SendEmailWithAttachmentAsync(string toEmail, string subject, string message, byte[]? attachmentData, string attachmentFilename = "image.jpg")
+    {
+        if (string.IsNullOrEmpty(Options.SendGridKey))
+        {
+            throw new Exception("Null SendGridKey");
+        }
+        await ExecuteWithAttachment(Options.SendGridKey, subject, message, toEmail, attachmentData, attachmentFilename);
+    }
+
+    private async Task ExecuteWithAttachment(string apiKey, string subject, string message, string toEmail, byte[]? attachmentData, string attachmentFilename)
+    {
+        var client = new SendGridClient(apiKey);
+        var msg = new SendGridMessage()
+        {
+            From = new EmailAddress("camwang@outlook.com", "EasyImgery"),
+            Subject = subject,
+            PlainTextContent = message,
+            HtmlContent = message
+        };
+        msg.AddTo(new EmailAddress(toEmail));
+
+        if (attachmentData != null)
+        {
+            var fileContent = Convert.ToBase64String(attachmentData);
+            msg.AddAttachment(attachmentFilename, fileContent);
+        }
+
+        // Disable click tracking.
+        msg.SetClickTracking(false, false);
+        var response = await client.SendEmailAsync(msg);
+        _logger.LogInformation(response.IsSuccessStatusCode
+                               ? $"Email to {toEmail} queued successfully!"
+                               : $"Failure Email to {toEmail}");
+    }
 }

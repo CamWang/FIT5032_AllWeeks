@@ -4,6 +4,7 @@ using EasyImagery.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EasyImagery.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231016105359_updateP")]
+    partial class updateP
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,7 +74,7 @@ namespace EasyImagery.Data.Migrations
                         .HasColumnType("varbinary(max)");
 
                     b.Property<string>("PatientId")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhysicianId")
                         .HasColumnType("nvarchar(450)");
@@ -85,10 +87,6 @@ namespace EasyImagery.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PatientId")
-                        .IsUnique()
-                        .HasFilter("[PatientId] IS NOT NULL");
 
                     b.HasIndex("PhysicianId");
 
@@ -356,6 +354,10 @@ namespace EasyImagery.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.HasIndex("TimeslotId")
+                        .IsUnique()
+                        .HasFilter("[TimeslotId] IS NOT NULL");
+
                     b.HasDiscriminator().HasValue("Patient");
                 });
 
@@ -382,15 +384,9 @@ namespace EasyImagery.Data.Migrations
 
             modelBuilder.Entity("EasyImagery.Models.Timeslot", b =>
                 {
-                    b.HasOne("EasyImagery.Models.Patient", "Patient")
-                        .WithOne("Timeslot")
-                        .HasForeignKey("EasyImagery.Models.Timeslot", "PatientId");
-
                     b.HasOne("EasyImagery.Models.Physician", "Physician")
                         .WithMany("Timeslots")
                         .HasForeignKey("PhysicianId");
-
-                    b.Navigation("Patient");
 
                     b.Navigation("Physician");
                 });
@@ -455,6 +451,15 @@ namespace EasyImagery.Data.Migrations
                     b.Navigation("Clinic");
                 });
 
+            modelBuilder.Entity("EasyImagery.Models.Patient", b =>
+                {
+                    b.HasOne("EasyImagery.Models.Timeslot", "Timeslot")
+                        .WithOne("Patient")
+                        .HasForeignKey("EasyImagery.Models.Patient", "TimeslotId");
+
+                    b.Navigation("Timeslot");
+                });
+
             modelBuilder.Entity("EasyImagery.Models.Physician", b =>
                 {
                     b.HasOne("EasyImagery.Models.Clinic", "Clinic")
@@ -471,9 +476,9 @@ namespace EasyImagery.Data.Migrations
                     b.Navigation("Physicians");
                 });
 
-            modelBuilder.Entity("EasyImagery.Models.Patient", b =>
+            modelBuilder.Entity("EasyImagery.Models.Timeslot", b =>
                 {
-                    b.Navigation("Timeslot");
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("EasyImagery.Models.Physician", b =>

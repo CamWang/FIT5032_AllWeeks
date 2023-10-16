@@ -7,16 +7,22 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using EasyImagery.Data;
 using EasyImagery.Models;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using EasyImagery.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EasyImagery
 {
+    [Authorize]
     public class TimeslotsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly EmailSender _emailSender;
 
-        public TimeslotsController(ApplicationDbContext context)
+        public TimeslotsController(ApplicationDbContext context, EmailSender emailSender)
         {
             _context = context;
+            _emailSender = emailSender;
         }
 
         // GET: Timeslots
@@ -62,10 +68,16 @@ namespace EasyImagery
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Description,StartDate,EndDate,PhysicianId,PatientId,Rating,ImageData")] Timeslot timeslot)
+        public async Task<IActionResult> Create([Bind("Id,Description,StartDate,EndDate,PhysicianId,PatientId,Rating,ImageData")] Timeslot timeslot, IFormFile Image)
         {
             if (ModelState.IsValid)
             {
+                if (Image != null && Image.Length > 0)
+                {
+                    using var memoryStream = new MemoryStream();
+                    await Image.CopyToAsync(memoryStream);
+                    timeslot.ImageData = memoryStream.ToArray();
+                }
                 _context.Add(timeslot);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -96,7 +108,7 @@ namespace EasyImagery
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(long id, [Bind("Id,Description,StartDate,EndDate,PhysicianId,PatientId,Rating,ImageData")] Timeslot timeslot)
+        public async Task<IActionResult> Edit(long id, [Bind("Id,Description,StartDate,EndDate,PhysicianId,PatientId,Rating,ImageData")] Timeslot timeslot, IFormFile Image)
         {
             if (id != timeslot.Id)
             {
@@ -105,6 +117,12 @@ namespace EasyImagery
 
             if (ModelState.IsValid)
             {
+                if (Image != null && Image.Length > 0)
+                {
+                    using var memoryStream = new MemoryStream();
+                    await Image.CopyToAsync(memoryStream);
+                    timeslot.ImageData = memoryStream.ToArray();
+                }
                 try
                 {
                     _context.Update(timeslot);
@@ -168,6 +186,22 @@ namespace EasyImagery
         private bool TimeslotExists(long id)
         {
           return (_context.Timeslot?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendImageToPatient(long id)
+        {
+            var timeslot = await _context.Timeslot
+                .Include(t => t.Patient)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            var patientEmail = timeslot.Patient.Email;
+            var subject = "Your Medical Image";
+            var body = "Here is the Medical Image.";
+
+            await _emailSender.SendEmailWithAttachmentAsync(patientEmail, subject, body, timeslot.ImageData, "image.jpg");
+
+            return RedirectToAction(nameof(Index));
         }
     }
 }
