@@ -1,0 +1,105 @@
+﻿@model IEnumerable<EasyImagery.Models.Timeslot>
+@using System.Text.Json
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<IdentityUser> UserManager
+
+@{
+    ViewData["Title"] = "Index";
+    var isAdmin = false;
+    if (User != null)
+    {
+        var user = await UserManager.GetUserAsync(User);
+        if (user != null)
+        {
+            isAdmin = await UserManager.IsInRoleAsync(user, "Admin");
+        }
+    }
+}
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+@section scripts {
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
+
+            var events = @Json.Serialize(Model.Select(m => new {
+            title = m.Description,
+            start = m.StartDate,
+            end = m.EndDate,
+            extendedProps = new {
+            physician = m.Physician?.UserName ?? "No Physician",
+            patientId = m.PatientId,
+            rating = m.Rating,
+            imageData = m.ImageData
+            }
+            }));
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                headerToolbar: { center: 'dayGridMonth,timeGridWeek' },
+                initialView: 'timeGridWeek',
+                events: events,
+                eventClick: function (info) {
+                    alert('Description: ' + info.event.title +
+                        '\nPhysician: ' + info.event.extendedProps.physician +
+                        '\nPatient ID: ' + info.event.extendedProps.patientId +
+                        '\nRating: ' + info.event.extendedProps.rating);
+                }
+            });
+
+            calendar.render();
+        });
+    </script>
+}
+
+@section styles {
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/main.min.css' rel='stylesheet' />
+}
+
+
+<h1>Availability for physician @Model.FirstOrDefault()?.Physician.Name</h1>
+
+<div id='calendar'></div>
+
+<table class="table">
+    <tbody>
+        @foreach (var item in Model) {
+        <tr>
+            <td>@Html.DisplayFor(modelItem => item.Description)</td>
+            <td>@Html.DisplayFor(modelItem => item.StartDate)</td>
+            <td>@Html.DisplayFor(modelItem => item.EndDate)</td>
+            <td>
+                @if (item.Physician != null) {
+                @Html.DisplayFor(modelItem => item.Physician.UserName)
+                        } else {
+                @: No Physician
+                        }
+            </td>
+            <td>@Html.DisplayFor(modelItem => item.PatientId)</td>
+            <td>@Html.DisplayFor(modelItem => item.Rating)</td>
+            <td>@Html.DisplayFor(modelItem => item.ImageData)</td>
+           
+                <td>
+
+                    @if (isAdmin)
+                    {
+                        <span>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                        <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                        <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    </td>
+                        </span>
+                    }
+                    else
+                    {
+                        <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                    }
+                </td>
+        </tr>
+        }
+    </tbody>
+</table>
