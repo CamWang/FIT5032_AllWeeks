@@ -16,12 +16,12 @@ namespace EasyImagery.Models
         [Display(Name = "Manager Id")]
         public string? ManagerId { get; set; }
 
-        public Manager? Manager { get; set; }
+        public ApplicationUser? Manager { get; set; }
 
         [Required]
         [MaxLength(200)]
         public string? Address { get; set; }
 
-        public ICollection<Physician>? Physicians { get; set; }
+        public ICollection<ApplicationUser>? Physicians { get; set; }
     }
 }

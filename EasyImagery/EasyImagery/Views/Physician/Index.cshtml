@@ -1,26 +1,27 @@
-﻿@model IEnumerable<EasyImagery.Models.Physician>
+﻿@model IEnumerable<ApplicationUser>
 
-<h2>Physicians</h2>
+<h2>Physician List</h2>
 
 <table class="table">
     <thead>
         <tr>
             <th>Name</th>
-            <th>UserName</th>
             <th>Description</th>
+            <th>Address</th>
+            <th>City</th>
             <th></th>
-            <!-- Add other columns as needed -->
         </tr>
     </thead>
     <tbody>
-        @foreach (var physician in Model)
+        @foreach (var item in Model)
         {
             <tr>
-                <td>@Html.DisplayFor(modelItem => physician.UserName)</td>
-                <td>@Html.DisplayFor(modelItem => physician.Name)</td>
-                <td>@Html.DisplayFor(modelItem => physician.Description)</td>
-                <td><a asp-controller="Timeslots" asp-action="Index" asp-route-itemid="@physician.Id">Check Availbility</a></td>
-                <!-- Add other columns as needed -->
+                <td>@item.Name</td>
+                <td>@item.Description</td>
+                <td>@item.Address</td>
+                <td>@item.City</td>
+                <td><a asp-controller="Timeslots" asp-action="Index" asp-route-itemid="@item.Id">See Availbility</a></td>
+                <!-- Add more fields as necessary -->
             </tr>
         }
     </tbody>

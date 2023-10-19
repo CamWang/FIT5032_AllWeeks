@@ -3,12 +3,22 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EasyImagery.Models
 {
-    public class Patient : IdentityUser
+    public class ApplicationUser : IdentityUser
     {
-        [Required]
-        [MaxLength(100)]
         [PersonalData]
+        [MaxLength(100)]
         public string? Name { get; set; }
+
+        [MaxLength(200)]
+        public string? Description { get; set; }
+
+        public int? ManagerClinicId { get; set; }
+        public Clinic? ManagerClinic { get; set; }
+
+        public int? PhysicianClinicId { get; set; }
+        public Clinic? PhysicianClinics { get; set; }
+
+        public ICollection<Timeslot>? PhysicianTimeslots { get; set; }
 
         [MaxLength(200)]
         [PersonalData]
@@ -30,7 +40,10 @@ namespace EasyImagery.Models
         [PersonalData]
         public DateTime? Birthday { get; set; }
 
-        public long? TimeslotId { get; set; }
-        public Timeslot? Timeslot { get; set; }
+        public long? PatientTimeslotId { get; set; }
+        public Timeslot? PatientTimeslot { get; set; }
+
+        public string? UserType { get; set; }
     }
+
 }

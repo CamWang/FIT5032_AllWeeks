@@ -1,34 +1,25 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
-using EasyImagery.Data; // Replace with your actual namespace
-using EasyImagery.Models;
 using Microsoft.EntityFrameworkCore;
+using EasyImagery.Data; // Replace with your actual namespace
 using System.Linq;
+using System.Threading.Tasks;
 
-namespace EasyImagery.Controllers
+public class PhysicianController : Controller
 {
-    public class PhysicianController : Controller
+    private readonly ApplicationDbContext _context; // Replace with your DbContext name
+
+    public PhysicianController(ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<Physician> _userManager;
+        _context = context;
+    }
 
-        public PhysicianController(ApplicationDbContext context, UserManager<Physician> userManager)
-        {
-            _context = context;
-            _userManager = userManager;
-        }
+    // GET: Physicians
+    public async Task<IActionResult> Index()
+    {
+        var physicians = await _context.Users
+            .Where(u => u.UserType == "Physician")
+            .ToListAsync();
 
-        public async Task<IActionResult> Index(int? itemId)
-        {
-            int clinicId = 1;
-            if (itemId != null)
-            {
-                clinicId = itemId.Value;
-            }
-            var physicians = await _userManager.Users
-                                       .Where(p => p.ClinicId == clinicId)
-                                       .ToListAsync();
-            return View(physicians);
-        }
+        return View(physicians);
     }
 }

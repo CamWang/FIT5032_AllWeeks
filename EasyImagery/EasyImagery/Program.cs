@@ -13,18 +13,15 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddTransient<EmailSender>();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddIdentityCore<Manager>().AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddIdentityCore<Physician>().AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddIdentityCore<Patient>().AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
 builder.Services.AddControllersWithViews();
-builder.Services.AddTransient<IEmailSender, EmailSender>();
+builder.Services.AddTransient<EmailSender>();
 builder.Services.Configure<AuthMessageSenderOptions>(builder.Configuration);
+builder.Services.AddRazorPages();
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -34,17 +31,18 @@ builder.Services.AddAuthentication(options =>
     .AddCookie()
     .AddGoogle(options =>
     {
-        options.ClientId = "54193987010-ib3r64e0qkvk1fudltrk76imrf58b6mp.apps.googleusercontent.com";
-        options.ClientSecret = "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";
+        options.ClientId = builder.Configuration["GoogleAuth:ClientId"];
+        options.ClientSecret = builder.Configuration["GoogleAuth:ClientSecret"];
+        options.SignInScheme = IdentityConstants.ExternalScheme;
     });
 
 
 var app = builder.Build();
-EnsureRolesCreated(app.Services.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>()).Wait();
+await EnsureRolesCreated(app.Services.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>());
 
 using (var scope = app.Services.CreateScope())
 {
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 

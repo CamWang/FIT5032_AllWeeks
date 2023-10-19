@@ -7,7 +7,7 @@ namespace EasyImagery.Data
     public class SeedingData
     {
         public static async Task SeedData(
-            UserManager<IdentityUser> userManager,
+            UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             ApplicationDbContext context)
         {
@@ -38,32 +38,13 @@ namespace EasyImagery.Data
 
             await context.SaveChangesAsync();
 
-            var tempu = await userManager.FindByEmailAsync("camwangs@gmail.com");
-            if (tempu == null)
-            {
-                var tempp = new Patient
-                {
-                    UserName = "camwangs@gmail.com",
-                    Email = "camwangs@gmail.com",
-                    Name = $"Cam",
-                    Address = $"Address 1",
-                    City = $"City 1",
-                    State = $"State 1",
-                    Zip = $"3003",
-                    Birthday = DateTime.Now.AddYears(-25).AddDays(5)
-                };
-                await userManager.CreateAsync(tempp, $"Patient0@123");
-                await userManager.AddToRoleAsync(tempp, "Patient");
-            }
-
-            // Create four patients
             for (int i = 1; i <= 4; i++)
             {
                 var email = $"patient{i}@easyimg.com";
                 var user = await userManager.FindByEmailAsync(email);
                 if (user == null)
                 {
-                    var patient = new Patient
+                    var newUser = new ApplicationUser
                     {
                         UserName = email,
                         Email = email,
@@ -74,26 +55,27 @@ namespace EasyImagery.Data
                         Zip = $"Zip{i}",
                         Birthday = DateTime.Now.AddYears(-25).AddDays(i)
                     };
-                    await userManager.CreateAsync(patient, $"Patient{i}@123");
-                    await userManager.AddToRoleAsync(patient, "Patient");
+                    await userManager.CreateAsync(newUser, $"Patient{i}@123");
+                    await userManager.AddToRoleAsync(newUser, "Patient");
                 }
             }
 
             // Create two physicians
             var physicianIds = new List<string>();
-            for (int i = 1; i <= 3; i++)
+            for (int i = 1; i <= 4; i++)
             {
                 var email = $"physician{i}@easyimg.com";
                 var user = await userManager.FindByEmailAsync(email);
                 if (user == null)
                 {
-                    var physician = new Physician
+                    var physician = new ApplicationUser
                     {
                         UserName = email,
                         Email = email,
                         Name = $"Physician {i}",
                         Description = $"Description {i}",
-                        ClinicId = i % 2 + 1
+                        PhysicianClinicId = i % 2 + 1,
+                        UserType = "Physician"
                     };
                     var result = await userManager.CreateAsync(physician, $"Physician{i}@123");
                     if (result.Succeeded)
@@ -110,10 +92,12 @@ namespace EasyImagery.Data
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
             if (adminUser == null)
             {
-                var admin = new IdentityUser
+                var admin = new ApplicationUser
                 {
+                    Name= "Admin",
                     UserName = adminEmail,
-                    Email = adminEmail
+                    Email = adminEmail,
+                    UserType = "Admin"
                 };
                 await userManager.CreateAsync(admin, "Admin@123");
                 await userManager.AddToRoleAsync(admin, "Admin");
@@ -124,19 +108,20 @@ namespace EasyImagery.Data
             var managerUser = await userManager.FindByEmailAsync(managerEmail);
             if (managerUser == null)
             {
-                var manager = new Manager
+                var manager = new ApplicationUser
                 {
                     UserName = managerEmail,
                     Email = managerEmail,
                     Name = "Manager 1",
-                    ClinicId = 1,
+                    ManagerClinicId = 1,
+                    UserType = "Manager"
                 };
                 await userManager.CreateAsync(manager, "Manager@123");
                 await userManager.AddToRoleAsync(manager, "Manager");
             }
 
             // Create ten timeslots for each clinic
-            for (int j = 1; j <= 20; j++)
+            for (int j = 1; j <= 30; j++)
             {
                 var timeslotDescription = $"Timeslot {j}";
                 var timeslotExists = await context.Timeslot.AnyAsync(t => t.Description == timeslotDescription);
@@ -147,8 +132,7 @@ namespace EasyImagery.Data
                         Description = timeslotDescription,
                         StartDate = DateTime.Now.AddHours(j),
                         EndDate = DateTime.Now.AddHours(j + 1),
-                        PhysicianId = physicianIds[j % 3],
-                        PatientId = null
+                        PhysicianId = physicianIds[j % physicianIds.Count],
                     };
                     context.Timeslot.Add(timeslot);
                 }

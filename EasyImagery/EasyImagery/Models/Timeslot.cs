@@ -18,10 +18,10 @@ namespace EasyImagery.Models
         public DateTime? EndDate { get; set; }
 
         public string? PhysicianId { get; set; }
-        public Physician? Physician { get; set; }
+        public ApplicationUser? Physician { get; set; }
 
         public string? PatientId { get; set; }
-        public Patient? Patient { get; set; }
+        public ApplicationUser? Patient { get; set; }
 
         [Range(0, 10)]
         public int? Rating { get; set; }
