@@ -1,0 +1,35 @@
+﻿@model List<Timeslot>
+@{
+    ViewData["Title"] = "My Appointments";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Physician</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var appointment in Model)
+        {
+            <tr>
+                <td>@appointment.Description</td>
+                <td>@appointment.StartDate</td>
+                <td>@appointment.EndDate</td>
+                <td>@appointment.Physician.Name</td>
+                <td>
+                    <form asp-action="CancelAppointment" method="post">
+                        <input type="hidden" name="id" value="@appointment.Id" />
+                        <button type="submit" class="btn btn-danger">Cancel</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

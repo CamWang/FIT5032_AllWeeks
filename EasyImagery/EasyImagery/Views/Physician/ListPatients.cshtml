@@ -1,0 +1,44 @@
+﻿@model IEnumerable<ApplicationUser>
+
+<h2>List of Patients</h2>
+
+<form method="post" action="/Physician/SendBulkEmails">
+    <div class="form-group">
+        <label for="subject">Subject:</label>
+        <input type="text" class="form-control" id="subject" name="subject" required />
+    </div>
+    <div class="form-group">
+        <label for="message">Message:</label>
+        <textarea class="form-control" id="message" name="message" required></textarea>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>Username</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var patient in Model)
+            {
+                if (patient != null)
+                {
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selectedPatients" value="@patient.Id" />
+                        </td>
+                        <td>@patient.UserName</td>
+                    </tr>
+                } else
+                {
+                    <tr>
+                        <td colspan="6">No patients found.</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary">Send Bulk Emails</button>
+</form>

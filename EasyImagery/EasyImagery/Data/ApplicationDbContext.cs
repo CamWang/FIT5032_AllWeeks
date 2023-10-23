@@ -15,6 +15,7 @@ namespace EasyImagery.Data
         public DbSet<Clinic>? Clinic { get; set; }
         public DbSet<Timeslot>? Timeslot { get; set; }
         public DbSet<ApplicationUser>? Physician { get; set; }
+        public DbSet<Rating>? Rating { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

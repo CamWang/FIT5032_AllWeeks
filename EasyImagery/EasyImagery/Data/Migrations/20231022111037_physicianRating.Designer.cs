@@ -4,6 +4,7 @@ using EasyImagery.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EasyImagery.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231022111037_physicianRating")]
+    partial class physicianRating
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -92,6 +94,9 @@ namespace EasyImagery.Data.Migrations
                     b.Property<int?>("PhysicianClinicId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("PhysicianRating")
+                        .HasColumnType("int");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -160,30 +165,6 @@ namespace EasyImagery.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Clinic");
-                });
-
-            modelBuilder.Entity("EasyImagery.Models.Rating", b =>
-                {
-                    b.Property<int>("RatingId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RatingId"), 1L, 1);
-
-                    b.Property<string>("PatientId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhysicianId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("StarRating")
-                        .HasColumnType("int");
-
-                    b.HasKey("RatingId");
-
-                    b.ToTable("Rating");
                 });
 
             modelBuilder.Entity("EasyImagery.Models.Timeslot", b =>

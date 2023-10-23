@@ -5,6 +5,10 @@ using EasyImagery.Data;
 using EasyImagery.Models;
 using EasyImagery.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using CsvHelper;
+using OfficeOpenXml;
+using System.Globalization;
 
 namespace EasyImagery
 {
@@ -13,23 +17,89 @@ namespace EasyImagery
     {
         private readonly ApplicationDbContext _context;
         private readonly EmailSender _emailSender;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public TimeslotsController(ApplicationDbContext context, EmailSender emailSender)
+        public TimeslotsController(ApplicationDbContext context, EmailSender emailSender, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _emailSender = emailSender;
+            _userManager = userManager;
         }
 
         // GET: Timeslots
-        public async Task<IActionResult> Index(string? itemId)
+        public async Task<IActionResult> Index(string? pid)
         {
             string physicianId = "1";
-            if (itemId != null)
+            if (pid != null)
             {
-                physicianId = itemId;
+                physicianId = pid;
             }
-            var applicationDbContext = _context.Timeslot.Where(t => t.PhysicianId == itemId).Include(t => t.Physician);
+            var applicationDbContext = _context.Timeslot.Where(t => t.PhysicianId == pid).Include(t => t.Physician);
             return View(await applicationDbContext.ToListAsync());
+        }
+
+        public async Task<IActionResult> TimeslotsByClinic(int clinicId, int pageNumber = 1, string searchTerm = null, string sortOrder = "asc")
+        {
+            const int PageSize = 10;
+
+            var physicianIds = await _context.Physician
+                .Where(p => p.PhysicianClinicId == clinicId)
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            var query = _context.Timeslot
+                .Where(t => physicianIds.Contains(t.PhysicianId));
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query = query.Where(t => t.Description.Contains(searchTerm));
+            }
+
+            switch (sortOrder.ToLower())
+            {
+                case "desc":
+                    query = query.OrderByDescending(t => t.StartDate);
+                    break;
+                default:
+                    query = query.OrderBy(t => t.StartDate);
+                    break;
+            }
+
+            var timeslots = await query
+                .Skip((pageNumber - 1) * PageSize)
+                .Take(PageSize)
+                .ToListAsync();
+
+            var totalItems = await query.CountAsync();
+
+            var model = new TimeslotViewModel
+            {
+                Timeslots = timeslots,
+                PageNumber = pageNumber,
+                TotalPages = (int)Math.Ceiling(totalItems / (double)PageSize),
+                SearchTerm = searchTerm,
+                ClinicId = clinicId,
+                SortOrder = sortOrder
+            };
+
+            return View(model);
+        }
+
+        // GET: Timeslots/MyTimeslots
+        [Authorize(Roles = "Physician")] // Assuming physicians have a role named "Physician"
+        public async Task<IActionResult> MyTimeslots()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Error", "Home", new { errorMessage = "User not authorized." });
+            }
+
+            var timeslots = await _context.Timeslot
+                                         .Where(t => t.PhysicianId == user.Id)
+                                         .Include(t => t.Patient)
+                                         .ToListAsync();
+            return View(timeslots);
         }
 
         // GET: Timeslots/Details/5
@@ -51,10 +121,41 @@ namespace EasyImagery
             return View(timeslot);
         }
 
-        // GET: Timeslots/Create
-        public IActionResult Create()
+        public async Task<IActionResult> BookTimeslot(long timeslotId)
         {
-            ViewData["PhysicianId"] = new SelectList(_context.Physician, "Id", "Id");
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Error", "Home", new { errorMessage = "User not authorized." });
+            }
+
+            var existingBooking = await _context.Timeslot.FirstOrDefaultAsync(t => t.PatientId == user.Id);
+            if (existingBooking != null)
+            {
+                return RedirectToAction("Error", "Home", new { errorMessage = "You've already booked an appointment. You can only book one timeslot at a time." });
+            }
+
+            var timeslot = await _context.Timeslot.FindAsync(timeslotId);
+            if (timeslot == null)
+            {
+                return RedirectToAction("Error", "Home", new { errorMessage = "Timeslot not found." });
+            }
+            if (timeslot.PatientId != null)
+            {
+                return RedirectToAction("Error", "Home", new { errorMessage = "This timeslot is already booked by another user." });
+            }
+
+            timeslot.PatientId = user.Id;
+            _context.Timeslot.Update(timeslot);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { pid = timeslot.PhysicianId });
+        }
+
+        // GET: Timeslots/Create
+        public IActionResult Create(string physicianId)
+        {
+            ViewData["PhysicianId"] = physicianId != null? physicianId : new SelectList(_context.Physician, "Id", "Id");
             return View();
         }
 
@@ -198,5 +299,49 @@ namespace EasyImagery
 
             return RedirectToAction(nameof(Index));
         }
+
+        public async Task<IActionResult> ExportTimeslots(string physicianId, string format)
+        {
+            var timeslots = await _context.Timeslot
+                .Where(t => t.PhysicianId == physicianId)
+                .ToListAsync();
+
+            var projectedTimeslots = timeslots.Select(t => new
+            {
+                t.Id,
+                t.Description,
+                t.StartDate,
+                t.EndDate,
+                t.PhysicianId,
+                t.PatientId,
+                t.Rating
+            }).ToList();
+
+            var memoryStream = new MemoryStream();
+
+            if (format == "csv")
+            {
+                using var writer = new StreamWriter(memoryStream, leaveOpen: true);
+                using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+                csv.WriteRecords(projectedTimeslots);
+                await writer.FlushAsync();
+                memoryStream.Position = 0;
+
+                return File(memoryStream, "text/csv", "Timeslots.csv");
+            }
+            else if (format == "xlsx")
+            {
+                using var package = new ExcelPackage(memoryStream);
+                var worksheet = package.Workbook.Worksheets.Add("Timeslots");
+                worksheet.Cells.LoadFromCollection(projectedTimeslots, true);
+                package.Save();
+                memoryStream.Position = 0;
+
+                return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Timeslots.xlsx");
+            }
+
+            return RedirectToAction("Error", "Home", new { errorMessage = "Invaild Format" });
+        }
+
     }
 }

@@ -1,0 +1,65 @@
+﻿@model TimeslotViewModel
+@{
+    ViewData["Title"] = "Timeslots by Clinic";
+}
+
+<form method="get">
+    <div class="input-group mb-3">
+        <input type="hidden" name="clinicId" value="@Model.ClinicId" />
+        <input type="text" class="form-control" name="searchTerm" placeholder="Search by description" value="@Model.SearchTerm">
+        <div class="input-group-append">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+    </div>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th>
+                <a href="@Url.Action("TimeslotsByClinic", new { clinicId = Model.ClinicId, pageNumber = Model.PageNumber, searchTerm = Model.SearchTerm, sortOrder = Model.SortOrder == "asc" ? "desc" : "asc" })">
+                    Start Date
+                    @if (Model.SortOrder == "asc")
+                    {
+                        <span>&uarr;</span>
+                    }
+                    else
+                    {
+                        <span>&darr;</span>
+                    }
+                </a>
+            </th>
+            <th>End Date</th>
+            <th>Physician</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Timeslots)
+        {
+            <tr>
+                <td>@item.Description</td>
+                <td>@item.StartDate</td>
+                <td>@item.EndDate</td>
+                <td>@item.Physician?.UserName</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<nav aria-label="Page navigation example">
+    <ul class="pagination">
+        <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+            <a class="page-link" href="@Url.Action("TimeslotsByClinic", new { clinicId = Model.ClinicId, pageNumber = Model.PageNumber - 1, searchTerm = Model.SearchTerm })">Previous</a>
+        </li>
+        @for (var i = 1; i <= Model.TotalPages; i++)
+        {
+            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                <a class="page-link" href="@Url.Action("TimeslotsByClinic", new { clinicId = Model.ClinicId, pageNumber = i, searchTerm = Model.SearchTerm })">@i</a>
+            </li>
+        }
+        <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+            <a class="page-link" href="@Url.Action("TimeslotsByClinic", new { clinicId = Model.ClinicId, pageNumber = Model.PageNumber + 1, searchTerm = Model.SearchTerm })">Next</a>
+        </li>
+    </ul>
+</nav>

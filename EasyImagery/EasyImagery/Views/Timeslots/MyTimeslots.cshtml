@@ -4,20 +4,7 @@
 @inject UserManager<ApplicationUser> UserManager
 
 @{
-    ViewData["Title"] = "Index";
-    var isAdmin = false;
-    if (User != null)
-    {
-        var user = await UserManager.GetUserAsync(User);
-        if (user != null)
-        {
-            isAdmin = await UserManager.IsInRoleAsync(user, "Admin");
-        }
-    }
-}
-
-@{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "My Timeslots";
 }
 
 @section scripts {
@@ -35,17 +22,19 @@
         }
 
         function openTimeslotModal(info) {
-            if (info.event.extendedProps.patientId) {
-                document.getElementById('timeslotIsBooked').textContent = "Already Booked!";
-                document.getElementById('timeslotBookingButton').className = "btn btn-secondary disabled";
-            } else {
-                document.getElementById('timeslotIsBooked').textContent = "Are you sure you want to book this timeslot?";
-                document.getElementById('timeslotBookingButton').className = "btn btn-primary";
-            }
             document.getElementById('timeslotIdInput').value = info.event.id;
+            document.getElementById('timeslotDescription').textContent = info.event.title;
             document.getElementById('timeslotStart').textContent = "Session Begin: " + convertToLocaleTimeString(info.event.start);
             document.getElementById('timeslotEnd').textContent = "Session End: " + convertToLocaleTimeString(info.event.end);
-            document.getElementById('timeslotPhysician').textContent = "Your Physician: " + info.event.extendedProps.physician;
+
+            if (info.event.extendedProps.patient) {
+                document.getElementById('timeslotPatient').textContent = "Booked By: " + info.event.extendedProps.patient;
+                document.getElementById('timeslotCancelBtn').style.display = 'block';
+            } else {
+                document.getElementById('timeslotPatient').textContent = "Available for Booking";
+                document.getElementById('timeslotCancelBtn').style.display = 'none';
+            }
+
             const modal = new bootstrap.Modal(document.getElementById('timeslotModal'));
             modal.show();
         }
@@ -61,8 +50,7 @@
                 end = m.EndDate,
                 backgroundColor = m.PatientId != null ? "#76818d": "#3788d8",
                 extendedProps = new {
-                    physician = m.Physician?.UserName ?? "No Physician",
-                    patientId = m.PatientId,
+                    patient = m.Patient?.UserName ?? "Not booked yet",
                     rating = m.Rating,
                     imageData = m.ImageData
                 }
@@ -87,71 +75,70 @@
 }
 
 
-<h1>Availability for physician @Model.FirstOrDefault()?.Physician.Name</h1>
-<h3 class="text-secondary">Click on timeslot on calendar to make booking!</h3>
+<h1>My Appointments</h1>
+
+<a class="btn btn-primary my-2" role="button" asp-area="" asp-controller="Timeslots" asp-action="Create">Add Timeslot</a>
+
+<a class="btn btn-success my-2" role="button" asp-area="" asp-controller="Timeslots" asp-action="ExportTimeslots" asp-route-physicianId="@UserManager.GetUserId(User)" asp-route-format="csv">Export as CSV</a>
+<a class="btn btn-success my-2" role="button" asp-area="" asp-controller="Timeslots" asp-action="ExportTimeslots" asp-route-physicianId="@UserManager.GetUserId(User)" asp-route-format="xlsx">Export as Excel</a>
 
 <div id='calendar'></div>
 
 <table class="table">
     <tbody>
-        @foreach (var item in Model) {
-        <tr>
-            <td>@Html.DisplayFor(modelItem => item.Description)</td>
-            <td>@Html.DisplayFor(modelItem => item.StartDate)</td>
-            <td>@Html.DisplayFor(modelItem => item.EndDate)</td>
-            <td>
-                @if (item.Physician != null) {
-                    @Html.DisplayFor(modelItem => item.Physician.UserName)
-                } else {
-                    @: No Physician
-                }
-            </td>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                <td>@Html.DisplayFor(modelItem => item.StartDate)</td>
+                <td>@Html.DisplayFor(modelItem => item.EndDate)</td>
                 <td>
                     @if (item.PatientId != null)
                     {
-                        @: Booked
-                    } else{
+                        @: Booked by @item.Patient.UserName
+                    }
+                    else
+                    {
                         @: Available
                     }
                 </td>
-            <td>@Html.DisplayFor(modelItem => item.Rating)</td>
-            <td>
-
-                @if (isAdmin)
-                {
-                    <span>
-                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                        <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                        <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-                    </span>
-                }
-            </td>
-        </tr>
+                <td>@Html.DisplayFor(modelItem => item.Rating)</td>
+                <td>
+                    @if (item.PatientId != null)
+                    {
+                        <form id="cancelAppointmentForm" method="post" action="/Appointments/CancelAppointmentFromPhysician">
+                            <input type="hidden" name="timeslotId" id="timeslotIdInput" value="@item.Id" />
+                        </form>
+                        <button id="timeslotCancelBtn" type="submit" form="cancelAppointmentForm" class="btn btn-danger">Cancel Appointment</button>
+                    }
+                </td>
+                <td>
+                    <a role="button" class="btn btn-primary" asp-controller="Timeslots" asp-action="Details" asp-route-id="@item.Id">Details</a>
+                </td>
+            </tr>
         }
     </tbody>
 </table>
 
-<!-- Modal -->
 <div class="modal fade" id="timeslotModal" tabindex="-1" aria-labelledby="timeslotModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="timeslotModalLabel">Book Timeslot</h5>
+                <h5 class="modal-title" id="timeslotModalLabel">Timeslot Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <p id="timeslotDescription"></p>
                 <p id="timeslotStart"></p>
                 <p id="timeslotEnd"></p>
-                <p id="timeslotPhysician"></p>
-                <form id="bookTimeslotForm" method="post" action="/Timeslots/BookTimeslot">
+                <p id="timeslotPatient"></p>
+                <form id="cancelAppointmentForm" method="post" action="/Appointments/CancelAppointmentFromPhysician">
                     <input type="hidden" name="timeslotId" id="timeslotIdInput" value="" />
-                    &nbsp; 
-                    <p id="timeslotIsBooked" class="text-bold">Are you sure you want to book this timeslot?</p>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button id="timeslotBookingButton" type="submit" form="bookTimeslotForm" class="btn btn-primary">Book Timeslot</button>
+                <button id="timeslotCancelBtn" type="submit" form="cancelAppointmentForm" class="btn btn-danger">Cancel Appointment</button>
             </div>
         </div>
     </div>

@@ -16,3 +16,13 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.star-rating button {
+    font-size: 1.5em;
+    margin-right: 5px;
+    color: #aaaaaa;
+}
+
+.star-rating button:hover {
+    color: #FFD700;
+}

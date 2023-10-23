@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using EasyImagery.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Rewrite;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,22 +23,27 @@ builder.Services.AddTransient<EmailSender>();
 builder.Services.Configure<AuthMessageSenderOptions>(builder.Configuration);
 builder.Services.AddRazorPages();
 
-builder.Services.AddAuthentication(options =>
+builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-})
-    .AddCookie()
+    options.LoginPath = "/Identity/Account/Login";
+});
+
+builder.Services.AddAuthentication()
     .AddGoogle(options =>
     {
         options.ClientId = builder.Configuration["GoogleAuth:ClientId"];
         options.ClientSecret = builder.Configuration["GoogleAuth:ClientSecret"];
-        options.SignInScheme = IdentityConstants.ExternalScheme;
+        options.CallbackPath = "/signin-google";
     });
 
 
 var app = builder.Build();
+
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 await EnsureRolesCreated(app.Services.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>());
 
 using (var scope = app.Services.CreateScope())
@@ -64,15 +70,13 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-app.UseRouting();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
+
+var options = new RewriteOptions().AddRedirectToHttps();
+app.UseRewriter(options);
 
 app.Run();
 

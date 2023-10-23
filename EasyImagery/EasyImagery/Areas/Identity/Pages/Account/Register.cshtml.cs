@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using EasyImagery.Services;
 
 namespace EasyImagery.Areas.Identity.Pages.Account
 {
@@ -37,7 +38,7 @@ namespace EasyImagery.Areas.Identity.Pages.Account
             IUserStore<ApplicationUser> userStore,
             SignInManager<ApplicationUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender,
+            EmailSender emailSender,
             RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;

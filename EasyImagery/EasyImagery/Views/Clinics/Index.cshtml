@@ -14,11 +14,63 @@
     }
 }
 
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAg8EX9QnWyKpINCIZQn9xuvcKXrf4dsZs&callback=initMap"></script>
+<script>
+    var map;
+    var clinics = [
+        { id: 1, lat: -37.815336, lng: -215.031205, title: 'Clinic 1' },
+        { id: 2, lat: -37.818048, lng: -215.045291, title: 'Clinic 2' },
+    ];
+    function initMap() {
+        var centerLocation = { lat: -37.816217, lng: -215.040309 };
+
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 14,
+            center: centerLocation
+        });
+
+        clinics.forEach(function (clinic) {
+            var marker = new google.maps.Marker({
+                position: clinic,
+                map: map,
+                title: clinic.title
+            });
+
+            marker.addListener('click', function () {
+                window.open('https://www.google.com/maps/dir/?api=1&destination=' + clinic.lat + ',' + clinic.lng, '_blank');
+            });
+        });
+    }
+
+    function focusOnClinic(clinicId) {
+        var clinic = clinics.find(c => c.id == clinicId);
+        if (clinic) {
+            map.setCenter({ lat: clinic.lat, lng: clinic.lng });
+            map.setZoom(16);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var mapButtons = document.querySelectorAll('.btn-view-on-map');
+        mapButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var clinicId = button.getAttribute('data-clinic-index');
+                focusOnClinic(clinicId);
+            });
+        });
+    });
+</script>
+
 <h1>Clinic</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+<div class="my-4" id="map" style="height: 400px; width: 100%;"></div>
+
+@if (isAdmin)
+{
+    <p>
+        <a asp-action="Create">Create New</a>
+    </p>
+}
 <table class="table">
     <thead>
         <tr>
@@ -29,11 +81,10 @@
                 @Html.DisplayNameFor(model => model.Description)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ManagerId)
-            </th>
-            <th>
                 @Html.DisplayNameFor(model => model.Address)
             </th>
+            <th></th>
+            <th></th>
             <th></th>
         </tr>
     </thead>
@@ -47,25 +98,27 @@
                 @Html.DisplayFor(modelItem => item.Description)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.ManagerId)
-            </td>
-            <td>
                 @Html.DisplayFor(modelItem => item.Address)
             </td>
-            <td>
-
-            @if (isAdmin)
-            {
-                <span>
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-                        </span>
-                    } else
-                    {
-                        <a asp-controller="Physician" asp-action="Index" asp-route-itemid="@item.Id">See Physicians</a>
-                    }
+                <td>
+                    <button class="btn btn-secondary btn-view-on-map" data-clinic-index="@item.Id">View on Map</button>
                 </td>
+            <td>
+                    <a class="btn btn-primary" asp-controller="Timeslots" asp-action="TimeslotsByClinic" asp-route-clinicid="@item.Id">All Timeslots</a>
+            </td>
+            <td>
+                @if (isAdmin)
+                {
+                    <span>
+                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                        <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                        <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    </span>
+                } else
+                {
+                    <a class="btn btn-primary" asp-controller="Physician" asp-action="Index" asp-route-itemid="@item.Id">See Physicians</a>
+                }
+            </td>
         </tr>
     }
     </tbody>

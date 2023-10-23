@@ -1,14 +1,12 @@
-﻿@model IEnumerable<ApplicationUser>
-
-<h2>Physician List</h2>
+﻿<h2>Physician List</h2>
 
 <table class="table">
     <thead>
         <tr>
             <th>Name</th>
             <th>Description</th>
-            <th>Address</th>
-            <th>City</th>
+            <th>Average Rating</th>
+            <th>Rate</th>
             <th></th>
         </tr>
     </thead>
@@ -16,12 +14,25 @@
         @foreach (var item in Model)
         {
             <tr>
-                <td>@item.Name</td>
-                <td>@item.Description</td>
-                <td>@item.Address</td>
-                <td>@item.City</td>
-                <td><a asp-controller="Timeslots" asp-action="Index" asp-route-itemid="@item.Id">See Availbility</a></td>
-                <!-- Add more fields as necessary -->
+                <td>@item.Physician.Name</td>
+                <td>@item.Physician.Description</td>
+                <td>@item.AverageRating.ToString("0.0")</td>
+                <td>
+                    <form method="post" asp-action="RatePhysician">
+                        <div class="star-rating">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <button type="submit" name="starRating" value="@i" style="background: none; border: none; cursor: pointer;">
+                                    <span style="color: @(i <= item.AverageRating ? "#FFD700" : "#aaaaaa")">&#9734;</span>
+                                </button>
+                                <input type="hidden" name="physicianId" value="@item.Physician.Id" />
+                            }
+                        </div>
+                    </form>
+                </td>
+                <td>
+                    <a asp-controller="Timeslots" asp-action="Index" asp-route-pid="@item.Physician.Id">See Availability</a>
+                </td>
             </tr>
         }
     </tbody>

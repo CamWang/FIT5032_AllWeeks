@@ -22,10 +22,15 @@ namespace EasyImagery.Areas.Identity.Pages.Account
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(
+            SignInManager<ApplicationUser> signInManager,
+            UserManager<ApplicationUser> userManager,
+            ILogger<LoginModel> logger)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
             _logger = logger;
         }
 
@@ -116,7 +121,32 @@ namespace EasyImagery.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
-                    return LocalRedirect(returnUrl);
+
+                    var user = await _userManager.FindByEmailAsync(Input.Email);
+                    if (user != null)
+                    {
+                        switch (user.UserType)
+                        {
+                            case "Admin":
+                                // If there's a specific admin dashboard
+                                return RedirectToPage("/Admin/Dashboard");
+                            case "Physician":
+                                return RedirectToPage("/Physician/Dashboard");
+                            // Handle other user types as needed
+                            default:
+                                break;
+                        }
+                    }
+
+                    if (Url.IsLocalUrl(returnUrl))
+                    {
+                        return LocalRedirect(returnUrl);
+                    }
+                    else
+                    {
+                        // Handle non-local URLs (maybe log it or redirect to a default page)
+                        return RedirectToAction("Index", "Home");
+                    }
                 }
                 if (result.RequiresTwoFactor)
                 {
